@@ -1,0 +1,27 @@
+# Cargo configuration for Lance C++ SDK
+
+[build]
+# Use all available CPU cores for compilation
+# jobs = 8  # Uncomment to limit parallel jobs
+
+[term]
+# Better progress display
+verbose = false
+color = "auto"
+
+# [net]
+# Configure network settings if needed
+# git-fetch-with-cli = true
+
+# [profile.release]
+# Already configured in Cargo.toml, but can override here if needed
+# lto = true
+# codegen-units = 1
+
+# [target.x86_64-unknown-linux-gnu]
+# Platform-specific settings
+# linker = "clang"
+
+# [target.x86_64-apple-darwin]
+# Platform-specific settings for macOS
+

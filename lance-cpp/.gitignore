@@ -1,0 +1,34 @@
+# Build artifacts
+build/
+cmake-build-*/
+
+# Rust artifacts
+rust/target/
+rust/Cargo.lock
+
+# Generated files
+rust/include/
+
+# Cargo cache (for offline builds, can be committed)
+# .cargo/
+
+# Test binaries
+test_compile
+test_link
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+

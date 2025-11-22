@@ -1,0 +1,62 @@
+[package]
+name = "lance-cpp-ffi"
+version = "0.1.0"
+edition = "2021"
+authors = ["Lance Devs <dev@lance.org>"]
+rust-version = "1.75.0"
+license = "Apache-2.0"
+description = "FFI bindings for Lance C++ SDK"
+
+[lib]
+name = "lance_cpp_ffi"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+# Use git repository for standalone compilation
+# To use local development version, uncomment the lines below and comment out the git lines:
+# lance = { path = "../../rust/lance", features = ["substrait"] }
+# lance-datafusion = { path = "../../rust/lance-datafusion" }
+# lance-encoding = { path = "../../rust/lance-encoding" }
+# lance-linalg = { path = "../../rust/lance-linalg" }
+# lance-index = { path = "../../rust/lance-index" }
+# lance-io = { path = "../../rust/lance-io" }
+# lance-core = { path = "../../rust/lance-core" }
+# lance-file = { path = "../../rust/lance-file" }
+
+# Git repository dependencies (for standalone compilation)
+lance = { git = "https://github.com/lancedb/lance.git", branch = "main", features = ["substrait"] }
+lance-datafusion = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-encoding = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-linalg = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-index = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-io = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-core = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-file = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+
+arrow = { version = "56.1", features = ["ffi"] }
+arrow-schema = "56.1"
+arrow-array = "56.1"
+
+tokio = { version = "1.23", features = ["rt-multi-thread", "macros"] }
+libc = "0.2"
+snafu = "0.8"
+log = "0.4"
+env_logger = "0.11.7"
+
+[build-dependencies]
+cbindgen = "0.26"
+
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false
+debug-assertions = false
+strip = "debuginfo"
+incremental = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+

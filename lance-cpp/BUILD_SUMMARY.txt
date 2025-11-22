@@ -1,0 +1,99 @@
+Lance C++ SDK - Build System Summary
+====================================
+
+QUICK START
+-----------
+1. ./build.sh           # Build everything
+2. ./verify_build.sh    # Verify build is correct
+
+BUILD METHODS
+-------------
+Method 1: Build script (recommended)
+    ./build.sh
+    ./build.sh --clean
+    ./build.sh --debug
+
+Method 2: Makefile
+    make
+    make clean
+    make debug
+
+Method 3: CMake (manual)
+    mkdir build && cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    cmake --build . -j$(nproc)
+
+OUTPUT ARTIFACTS
+----------------
+After successful build:
+
+Libraries:
+  - build/liblance_cpp.a              (~500KB)
+  - rust/target/release/liblance_cpp_ffi.a  (~50MB)
+
+Examples:
+  - build/examples/basic_read         (~5MB)
+  - build/examples/parallel_read      (~5MB)
+
+Headers:
+  - include/lance/*.hpp               (C++ API)
+  - rust/include/lance/ffi/lance_ffi.h  (FFI, auto-generated)
+
+STANDALONE BUILD
+----------------
+This project can be built independently:
+
+1. Copy to any location:
+   cp -r lance-cpp /path/to/anywhere
+
+2. Build:
+   cd /path/to/anywhere
+   ./build.sh
+
+The project uses Git dependencies and will automatically
+download Lance from GitHub on first build.
+
+USAGE
+-----
+Run examples:
+  ./build/examples/basic_read /path/to/dataset
+  ./build/examples/parallel_read /path/to/dataset 4
+
+Link in your project:
+  g++ -std=c++20 myapp.cpp \
+      -I./include \
+      -L./build -L./rust/target/release \
+      -llance_cpp -llance_cpp_ffi \
+      -larrow -lpthread -ldl -lm \
+      -o myapp
+
+DOCUMENTATION
+-------------
+- README.md              - API reference and usage guide
+- QUICKSTART.md          - 5-minute quick start
+- BUILD_GUIDE.md         - Detailed build instructions
+- STANDALONE_BUILD.md    - Standalone build guide
+- VERIFY_BUILD.md        - Build verification guide
+- PROJECT_SUMMARY.md     - Project architecture overview
+
+SCRIPTS
+-------
+- build.sh               - Main build script
+- verify_build.sh        - Verify build artifacts
+- Makefile               - Make-based build (wrapper)
+
+TROUBLESHOOTING
+---------------
+Build fails:
+  ./build.sh --clean -v
+
+Missing dependencies:
+  See BUILD_GUIDE.md for installation instructions
+
+Verification fails:
+  ./verify_build.sh
+
+For more help:
+  ./build.sh --help
+  See documentation in *.md files
+
