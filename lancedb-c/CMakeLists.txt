@@ -74,7 +74,40 @@ target_compile_options(full PRIVATE ${ARROW_CFLAGS_OTHER})
 set_target_properties(full PROPERTIES
   BUILD_RPATH ${RUST_TARGET_DIR}
 )
-add_custom_target(examples DEPENDS simple full)
+
+# dataset_read example
+add_executable(dataset_read examples/dataset_read.cpp)
+target_link_libraries(dataset_read
+  lancedb
+  Threads::Threads
+  ${ARROW_LIBRARIES}
+)
+target_include_directories(dataset_read
+  PRIVATE ${ARROW_INCLUDE_DIRS}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_compile_options(dataset_read PRIVATE ${ARROW_CFLAGS_OTHER})
+set_target_properties(dataset_read PROPERTIES
+  BUILD_RPATH ${RUST_TARGET_DIR}
+)
+
+# parallel_scan example
+add_executable(parallel_scan examples/parallel_scan.cpp)
+target_link_libraries(parallel_scan
+  lancedb
+  Threads::Threads
+  ${ARROW_LIBRARIES}
+)
+target_include_directories(parallel_scan
+  PRIVATE ${ARROW_INCLUDE_DIRS}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_compile_options(parallel_scan PRIVATE ${ARROW_CFLAGS_OTHER})
+set_target_properties(parallel_scan PROPERTIES
+  BUILD_RPATH ${RUST_TARGET_DIR}
+)
+
+add_custom_target(examples DEPENDS simple full dataset_read parallel_scan)
 
 # Optional test framework
 option(BUILD_TESTS "Build tests" OFF)

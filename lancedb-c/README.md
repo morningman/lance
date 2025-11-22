@@ -11,13 +11,17 @@ This directory contains comprehensive C FFI bindings for LanceDB, allowing you t
 │   ├── table.rs            # Table operations and data manipulation
 │   ├── query.rs            # Complete query API implementation
 │   ├── index.rs            # Index management
+│   ├── dataset.rs          # Lance Dataset operations (NEW)
+│   ├── scanner.rs          # Lance Scanner operations (NEW)
 │   ├── error.rs            # Error handling and reporting
 │   └── types.rs            # Type definitions and conversions
 ├── include/
 │   └── lancedb.h           # Complete C header file with Arrow C ABI
 ├── examples/
 │   ├── full.cpp            # C++ example using Arrow. Covering most of the API
-│   └── simple.cpp          # C++ example using Arrow. Similar to rust/examples/simple.rs
+│   ├── simple.cpp          # C++ example using Arrow. Similar to rust/examples/simple.rs
+│   ├── dataset_read.cpp    # Lance Dataset basic reading example (NEW)
+│   └── parallel_scan.cpp   # Parallel fragment reading example (NEW)
 ├── tests/                  # C++ unit tests using Catch2
 ├── Cargo.toml              # Rust crate configuration
 ├── CMakeLists.txt          # CMake build configuration
@@ -44,10 +48,15 @@ This directory contains comprehensive C FFI bindings for LanceDB, allowing you t
    make
    ```
 
-2. **Run the example:**
+2. **Run the examples:**
    ```bash
+   # LanceDB examples
    ./simple
    ./full
+   
+   # Lance Dataset examples (direct file access)
+   ./dataset_read /path/to/lance/dataset
+   ./parallel_scan /path/to/lance/dataset 4
    ```
 
 ### Manual Build Process
@@ -77,7 +86,7 @@ If you prefer to build manually:
 
 ## API Overview
 
-The C API provides comprehensive LanceDB functionality:
+The C API provides comprehensive LanceDB functionality, plus direct Lance dataset access:
 
 ### Connection Management
 - `lancedb_connect()` - Create connection builder
@@ -126,6 +135,33 @@ The C API provides comprehensive LanceDB functionality:
 - `lancedb_table_drop_index()` - Drop specific index
 - `lancedb_table_optimize()` - Optimize table (compact/prune/rebuild indices)
 - `lancedb_free_index_list()` - Free index list
+
+### Lance Dataset Operations (NEW!)
+Direct file-level access to Lance datasets, bypassing the LanceDB layer:
+
+- `lance_dataset_open()` - Open dataset from file path or URI (local, S3, etc.)
+- `lance_dataset_schema()` - Get dataset schema as Arrow C ABI
+- `lance_dataset_count_rows()` - Count rows in dataset
+- `lance_dataset_version()` - Get dataset version
+- `lance_dataset_uri()` - Get dataset URI
+- `lance_dataset_get_fragments()` - Get fragment metadata (for parallel reading)
+- `lance_dataset_create_scanner()` - Create scanner with filters and projections
+- `lance_dataset_free()` - Free dataset resources
+- `lance_fragments_free()` - Free fragment array
+
+### Scanner Operations (NEW!)
+Read data from Lance datasets using scanners:
+
+- `lance_scanner_load_next_batch()` - Load next batch from scanner
+- `lance_scanner_to_arrow()` - Get current batch as Arrow C ABI
+- `lance_scanner_free()` - Free scanner resources
+
+**Use Cases for Lance Dataset API:**
+- Direct file access without LanceDB database layer
+- Fine-grained control over fragment-level reading
+- Parallel multi-threaded reading of fragments
+- Custom predicate pushdown and column projection
+- Reading from object storage (S3, Azure, GCS) directly
 
 ### Error Handling
 - All functions that return `LanceDBError` now accept an optional `error_message` parameter

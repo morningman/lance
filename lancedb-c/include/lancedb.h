@@ -1079,6 +1079,235 @@ void lancedb_free_arrow_arrays(
  */
 void lancedb_free_string(char* str);
 
+// ============================================================================
+// Lance Dataset API (Direct File-Level Access)
+// ============================================================================
+
+/**
+ * Opaque handle to Lance Dataset
+ */
+typedef struct LanceDataset LanceDataset;
+
+/**
+ * Opaque handle to Lance Scanner
+ */
+typedef struct LanceScanner LanceScanner;
+
+/**
+ * Fragment metadata structure
+ */
+typedef struct {
+    int id;
+    size_t physical_rows;
+    size_t num_deletions;
+} LanceFragment;
+
+/**
+ * Scan options for Lance Dataset
+ */
+typedef struct {
+    const char* filter;
+    const char** columns;
+    size_t columns_count;
+    const int* fragment_ids;
+    size_t fragment_ids_count;
+    int64_t limit;  // -1 means no limit
+    int64_t offset; // -1 means no offset
+    int64_t batch_size; // -1 means default
+} LanceScanOptions;
+
+/**
+ * Open a Lance dataset from file path or URI
+ * 
+ * @param path - Path to dataset (local path, s3://, etc.)
+ * @param dataset_out - Output dataset handle
+ * @param error_message - Optional error message output (use lancedb_free_string to free)
+ * @return Error code
+ *
+ * Example:
+ *   LanceDataset* dataset = NULL;
+ *   char* error = NULL;
+ *   if (lance_dataset_open("/path/to/data", &dataset, &error) != LANCEDB_SUCCESS) {
+ *       fprintf(stderr, "Error: %s\n", error);
+ *       lancedb_free_string(error);
+ *   }
+ */
+LanceDBError lance_dataset_open(
+    const char* path,
+    LanceDataset** dataset_out,
+    char** error_message
+);
+
+/**
+ * Get dataset schema as Arrow C ABI
+ *
+ * @param dataset - Dataset handle
+ * @param schema_out - Output Arrow schema (caller must release using Arrow C ABI)
+ * @param error_message - Optional error message output
+ * @return Error code
+ */
+LanceDBError lance_dataset_schema(
+    const LanceDataset* dataset,
+    FFI_ArrowSchema** schema_out,
+    char** error_message
+);
+
+/**
+ * Count rows in dataset
+ *
+ * @param dataset - Dataset handle
+ * @param count_out - Output row count
+ * @param error_message - Optional error message output
+ * @return Error code
+ */
+LanceDBError lance_dataset_count_rows(
+    const LanceDataset* dataset,
+    int64_t* count_out,
+    char** error_message
+);
+
+/**
+ * Get dataset version
+ *
+ * @param dataset - Dataset handle
+ * @param version_out - Output version number
+ * @return Error code
+ */
+LanceDBError lance_dataset_version(
+    const LanceDataset* dataset,
+    int64_t* version_out
+);
+
+/**
+ * Get dataset URI
+ *
+ * @param dataset - Dataset handle
+ * @param uri_out - Output URI string (use lancedb_free_string to free)
+ * @param error_message - Optional error message output
+ * @return Error code
+ */
+LanceDBError lance_dataset_uri(
+    const LanceDataset* dataset,
+    char** uri_out,
+    char** error_message
+);
+
+/**
+ * Get fragments from dataset
+ *
+ * @param dataset - Dataset handle
+ * @param fragments_out - Output fragments array (use lance_fragments_free to free)
+ * @param count_out - Output fragment count
+ * @param error_message - Optional error message output
+ * @return Error code
+ *
+ * Example:
+ *   LanceFragment* fragments = NULL;
+ *   size_t count = 0;
+ *   lance_dataset_get_fragments(dataset, &fragments, &count, NULL);
+ *   for (size_t i = 0; i < count; i++) {
+ *       printf("Fragment %d: %zu rows\n", fragments[i].id, fragments[i].physical_rows);
+ *   }
+ *   lance_fragments_free(fragments, count);
+ */
+LanceDBError lance_dataset_get_fragments(
+    const LanceDataset* dataset,
+    LanceFragment** fragments_out,
+    size_t* count_out,
+    char** error_message
+);
+
+/**
+ * Free fragments array
+ *
+ * @param fragments - Fragments array from lance_dataset_get_fragments
+ * @param count - Number of fragments
+ */
+void lance_fragments_free(LanceFragment* fragments, size_t count);
+
+/**
+ * Create scanner for dataset
+ *
+ * @param dataset - Dataset handle
+ * @param options - Scan options (can be NULL for defaults)
+ * @param scanner_out - Output scanner handle (use lance_scanner_free to free)
+ * @param error_message - Optional error message output
+ * @return Error code
+ *
+ * Example:
+ *   LanceScanOptions opts = {
+ *       .filter = "age > 25",
+ *       .columns = NULL,
+ *       .columns_count = 0,
+ *       .fragment_ids = NULL,
+ *       .fragment_ids_count = 0,
+ *       .limit = 100,
+ *       .offset = 0,
+ *       .batch_size = -1
+ *   };
+ *   LanceScanner* scanner = NULL;
+ *   lance_dataset_create_scanner(dataset, &opts, &scanner, NULL);
+ */
+LanceDBError lance_dataset_create_scanner(
+    const LanceDataset* dataset,
+    const LanceScanOptions* options,
+    LanceScanner** scanner_out,
+    char** error_message
+);
+
+/**
+ * Free dataset
+ *
+ * @param dataset - Dataset handle from lance_dataset_open
+ */
+void lance_dataset_free(LanceDataset* dataset);
+
+/**
+ * Load next batch from scanner
+ *
+ * @param scanner - Scanner handle
+ * @param has_next_out - Output: true if batch loaded, false if no more batches
+ * @param error_message - Optional error message output
+ * @return Error code
+ *
+ * Example:
+ *   bool has_next = false;
+ *   while (lance_scanner_load_next_batch(scanner, &has_next, NULL) == LANCEDB_SUCCESS && has_next) {
+ *       FFI_ArrowArray* array = NULL;
+ *       FFI_ArrowSchema* schema = NULL;
+ *       lance_scanner_to_arrow(scanner, &array, &schema, NULL);
+ *       // Process batch...
+ *   }
+ */
+LanceDBError lance_scanner_load_next_batch(
+    LanceScanner* scanner,
+    bool* has_next_out,
+    char** error_message
+);
+
+/**
+ * Get current batch as Arrow C ABI
+ *
+ * @param scanner - Scanner handle
+ * @param array_out - Output Arrow array (caller must release using Arrow C ABI)
+ * @param schema_out - Output Arrow schema (caller must release using Arrow C ABI)
+ * @param error_message - Optional error message output
+ * @return Error code
+ */
+LanceDBError lance_scanner_to_arrow(
+    const LanceScanner* scanner,
+    FFI_ArrowArray** array_out,
+    FFI_ArrowSchema** schema_out,
+    char** error_message
+);
+
+/**
+ * Free scanner
+ *
+ * @param scanner - Scanner handle from lance_dataset_create_scanner
+ */
+void lance_scanner_free(LanceScanner* scanner);
+
 #ifdef __cplusplus
 }
 #endif
