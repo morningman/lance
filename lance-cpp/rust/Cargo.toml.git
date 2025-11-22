@@ -1,0 +1,56 @@
+# Cargo.toml for standalone builds (using Git dependencies)
+# This is the default configuration for independent compilation.
+
+[package]
+name = "lance-cpp-ffi"
+version = "0.1.0"
+edition = "2021"
+authors = ["Lance Devs <dev@lance.org>"]
+rust-version = "1.75.0"
+license = "Apache-2.0"
+description = "FFI bindings for Lance C++ SDK"
+repository = "https://github.com/lancedb/lance"
+
+[lib]
+name = "lance_cpp_ffi"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+# Git repository dependencies (for standalone compilation)
+# These allow the project to be built independently without the Lance monorepo
+lance = { git = "https://github.com/lancedb/lance.git", branch = "main", features = ["substrait"] }
+lance-datafusion = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-encoding = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-linalg = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-index = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-io = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-core = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+lance-file = { git = "https://github.com/lancedb/lance.git", branch = "main" }
+
+arrow = { version = "56.1", features = ["ffi"] }
+arrow-schema = "56.1"
+arrow-array = "56.1"
+
+tokio = { version = "1.23", features = ["rt-multi-thread", "macros"] }
+libc = "0.2"
+snafu = "0.8"
+log = "0.4"
+env_logger = "0.11.7"
+
+[build-dependencies]
+cbindgen = "0.26"
+
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false
+debug-assertions = false
+strip = "debuginfo"
+incremental = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+

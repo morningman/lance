@@ -182,6 +182,38 @@ else
     echo "  macOS:         brew install apache-arrow"
 fi
 
+# Check if we're in a workspace
+print_info "Checking build context..."
+if [ -f "../Cargo.toml" ] && grep -q "\[workspace\]" "../Cargo.toml" 2>/dev/null; then
+    print_info "Detected: Building within Lance monorepo"
+    WORKSPACE_MODE=true
+else
+    print_info "Detected: Standalone build"
+    WORKSPACE_MODE=false
+fi
+
+# Verify Cargo.toml configuration
+cd rust
+if grep -q 'git = "https://github.com/lancedb/lance.git"' Cargo.toml; then
+    USING_GIT_DEPS=true
+else
+    USING_GIT_DEPS=false
+fi
+cd ..
+
+if [ "$WORKSPACE_MODE" = true ] && [ "$USING_GIT_DEPS" = true ]; then
+    print_warning "You are in Lance monorepo but using git dependencies"
+    print_warning "This may cause issues. Consider running:"
+    print_warning "  ./switch-deps.sh local"
+    echo ""
+elif [ "$WORKSPACE_MODE" = false ] && [ "$USING_GIT_DEPS" = false ]; then
+    print_warning "You are building standalone but using local path dependencies"
+    print_warning "This may fail if Lance repo is not at ../../rust/"
+    print_warning "Consider running:"
+    print_warning "  ./switch-deps.sh git"
+    echo ""
+fi
+
 # Print build configuration
 print_header "Build Configuration"
 echo "Build Type:        $BUILD_TYPE"
@@ -191,6 +223,8 @@ echo "C++ Compiler:      $CXX"
 echo "Skip Rust Build:   $SKIP_RUST"
 echo "Build Examples:    $BUILD_EXAMPLES"
 echo "Clean Build:       $CLEAN_BUILD"
+echo "Workspace Mode:    $WORKSPACE_MODE"
+echo "Using Git Deps:    $USING_GIT_DEPS"
 
 # Clean build directory if requested
 if [ "$CLEAN_BUILD" = true ]; then
