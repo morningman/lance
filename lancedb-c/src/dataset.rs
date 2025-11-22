@@ -14,7 +14,7 @@ use arrow_schema::ffi::FFI_ArrowSchema;
 use lance::dataset::Dataset as LanceDataset;
 
 use crate::connection::get_runtime;
-use crate::error::{handle_error, set_invalid_argument_message, LanceDBError};
+use crate::error::{set_invalid_argument_message, LanceDBError};
 
 /// Opaque handle to a Lance Dataset
 #[repr(C)]
@@ -102,9 +102,8 @@ pub unsafe extern "C" fn lance_dataset_schema(
     }
 
     let dataset = &(*dataset).inner;
-    let runtime = get_runtime();
-
-    match runtime.block_on(async { dataset.schema().await }) {
+    
+    match dataset.schema() {
         Ok(schema) => {
             match FFI_ArrowSchema::try_from(&*schema) {
                 Ok(ffi_schema) => {
@@ -258,14 +257,16 @@ pub unsafe extern "C" fn lance_dataset_get_fragments(
 
     let fragments = runtime.block_on(async { dataset.get_fragments() });
 
-    let fragment_metadata: Vec<LanceFragment> = fragments
-        .iter()
-        .map(|f| LanceFragment {
+    let mut fragment_metadata: Vec<LanceFragment> = Vec::new();
+    for f in fragments.iter() {
+        let physical_rows = runtime.block_on(async { f.physical_rows().await.unwrap_or(0) });
+        let num_deletions = runtime.block_on(async { f.count_deletions().await.unwrap_or(0) });
+        fragment_metadata.push(LanceFragment {
             id: f.id() as i32,
-            physical_rows: f.physical_rows().unwrap_or(0),
-            num_deletions: f.count_deletions().unwrap_or(0),
-        })
-        .collect();
+            physical_rows,
+            num_deletions,
+        });
+    }
 
     *count_out = fragment_metadata.len();
 

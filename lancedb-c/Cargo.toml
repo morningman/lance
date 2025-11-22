@@ -19,14 +19,14 @@ crate-type = ["cdylib", "staticlib"]
 tokio = { version = "1.23", features = ["rt-multi-thread"] }
 libc = "0.2"
 lancedb = { version = "0.22.1", features = ["remote"] }
-arrow = { version = "55.1", optional = false }
-arrow-array = "55.1"
-arrow-data = "55.1"
-arrow-schema = "55.1"
+arrow = { version = "56.1", optional = false }
+arrow-array = "56.1"
+arrow-data = "56.1"
+arrow-schema = "56.1"
 futures = "0.3.31"
 chrono = "=0.4.41"
 
 # Lance dataset support
-lance = { path = "../rust/lance" }
-lance-io = { path = "../rust/lance-io" }
-lance-core = { path = "../rust/lance-core" }
+lance = { version = "0.39.0" }
+lance-io = { version = "0.39.0" }
+lance-core = { version = "0.39.0" }

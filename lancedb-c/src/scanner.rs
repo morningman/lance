@@ -7,13 +7,11 @@
 
 use std::ffi::CStr;
 use std::os::raw::c_char;
-use std::ptr;
 use std::sync::Arc;
 
+use arrow_array::ffi::{FFI_ArrowArray, FFI_ArrowSchema};
 use arrow_array::RecordBatch;
-use arrow_schema::ffi::{FFI_ArrowArray, FFI_ArrowSchema};
 use futures::StreamExt;
-use lance::dataset::scanner::Scanner as LanceScanner;
 
 use crate::connection::get_runtime;
 use crate::dataset::Dataset;
@@ -125,13 +123,17 @@ pub unsafe extern "C" fn lance_dataset_create_scanner(
         // Apply fragment IDs
         if !opts.fragment_ids.is_null() && opts.fragment_ids_count > 0 {
             let fragment_ids = std::slice::from_raw_parts(opts.fragment_ids, opts.fragment_ids_count);
-            scan.with_fragments(fragment_ids.iter().map(|&id| id as usize));
+            let frag_vec: Vec<_> = dataset.get_fragments()
+                .into_iter()
+                .filter(|f| fragment_ids.contains(&(f.id() as i32)))
+                .collect();
+            scan.with_fragments(frag_vec);
         }
 
         // Apply limit and offset
         if opts.limit >= 0 {
-            let offset = if opts.offset >= 0 { opts.offset as usize } else { 0 };
-            if let Err(e) = scan.limit(Some(opts.limit as usize), offset) {
+            let offset = if opts.offset >= 0 { Some(opts.offset) } else { None };
+            if let Err(e) = scan.limit(Some(opts.limit), offset) {
                 if !error_message.is_null() {
                     if let Ok(c_str) = std::ffi::CString::new(format!("{}", e)) {
                         *error_message = c_str.into_raw();
@@ -272,9 +274,20 @@ pub unsafe extern "C" fn lance_scanner_to_arrow(
     }
 
     // Export array
-    let ffi_array = FFI_ArrowArray::new(batch.into());
-    let boxed_array = Box::new(ffi_array);
-    *array_out = Box::into_raw(boxed_array);
+    match FFI_ArrowArray::try_from(batch.as_ref()) {
+        Ok(ffi_array) => {
+            let boxed_array = Box::new(ffi_array);
+            *array_out = Box::into_raw(boxed_array);
+        }
+        Err(e) => {
+            if !error_message.is_null() {
+                if let Ok(c_str) = std::ffi::CString::new(format!("{}", e)) {
+                    *error_message = c_str.into_raw();
+                }
+            }
+            return LanceDBError::Arrow;
+        }
+    }
 
     LanceDBError::Success
 }
